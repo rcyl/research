@@ -69,3 +69,34 @@ dma1.ch1.cr.write(|w| {
 - Must use main SRAM (0x20000000) for DMA buffers
 - Clear interrupt flags before starting new transfer
 - Disable channel before reconfiguring
+
+## Test Results (2026-01-25)
+
+### Build
+- `cargo build --release` succeeds with minor warnings about `unsafe` blocks and static mutable references
+
+### Robot Framework Tests
+
+| Test Case | Status | Notes |
+|-----------|--------|-------|
+| Should Initialize DMA And Report | PASS | |
+| Should Complete Memory To Memory Transfer | FAIL | Transfer complete flag not set |
+| Should Decrement NDTR To Zero | PASS | NDTR correctly decrements to 0 |
+| Should Complete Second Transfer | FAIL | Transfer complete flag not set |
+| Should Report Test Summary | PASS | |
+
+### Renode DMA Limitation
+
+**Issue:** Renode's `STM32DMA` model does not properly set the Transfer Complete Interrupt Flag (TCIF1) for memory-to-memory transfers.
+
+**Observed behavior:**
+- NDTR register decrements to 0000 correctly (data count works)
+- `isr.tcif1.is_complete()` never returns true
+- Firmware times out waiting for transfer complete flag
+
+**Root cause:** The `DMA.STM32DMA` peripheral in Renode has limited support for M2M mode. The register counting mechanism is emulated, but the actual data transfer and status flag updates are not fully implemented.
+
+**Workaround options:**
+1. Skip TCIF check and rely on NDTR == 0 for transfer completion
+2. Use peripheral-based DMA transfers (e.g., SPI, UART) which have better Renode support
+3. Implement a custom Python peripheral to simulate DMA behavior

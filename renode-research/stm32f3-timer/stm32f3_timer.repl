@@ -1,7 +1,7 @@
 // STM32F3 Discovery Board Platform with Timer Test
 // STM32F303VCT6: 256KB Flash, 40KB SRAM, 8KB CCM
 
-using "/src/stm32f3-uart/stm32f3.repl"
+using "../stm32f3-uart/stm32f3.repl"
 
 // User Button on PA0
 UserButton: Miscellaneous.Button @ gpioPortA

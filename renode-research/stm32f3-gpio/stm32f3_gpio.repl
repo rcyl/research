@@ -1,0 +1,18 @@
+// STM32F3 Discovery Board Platform with GPIO Test Configuration
+// STM32F303VCT6: 256KB Flash, 40KB SRAM, 8KB CCM
+
+using "../stm32f3-uart/stm32f3.repl"
+
+// User Button on PA0 (directly connected to gpioPortA pin 0)
+UserButton: Miscellaneous.Button @ gpioPortA
+    -> gpioPortA@0
+
+// LED on PE8 (directly connected to gpioPortE pin 8)
+LED_PE8: Miscellaneous.LED @ gpioPortE
+gpioPortE:
+    8 -> LED_PE8@0
+
+// LED on PE9 (directly connected to gpioPortE pin 9)
+LED_PE9: Miscellaneous.LED @ gpioPortE
+gpioPortE:
+    9 -> LED_PE9@0

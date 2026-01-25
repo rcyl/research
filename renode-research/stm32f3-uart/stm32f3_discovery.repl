@@ -1,7 +1,7 @@
 // STM32F3 Discovery Board Platform
 // STM32F303VCT6: 256KB Flash, 40KB SRAM, 8KB CCM
 
-using "/src/renode-research/stm32f3-uart/stm32f3.repl"
+using "stm32f3.repl"
 
 // User Button on PA0 (directly active high)
 UserButton: Miscellaneous.Button @ gpioPortA

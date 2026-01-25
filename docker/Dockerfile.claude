@@ -1,7 +1,7 @@
 FROM debian:bookworm
 
 RUN apt-get update && apt-get install -y \
-    nodejs npm curl wget podman \
+    nodejs npm curl wget podman tmux \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust via rustup
@@ -20,4 +20,8 @@ RUN echo "alias claude-yolo='claude --dangerously-skip-permissions'" >> ~/.bashr
 ENV IS_SANDBOX=1
 ENV TERM=xterm-256color
 ENV PATH="/root/.local/bin:${PATH}"
+
+# Set tmux to inherit shell variables
+RUN echo 'set -g default-command "/bin/bash"' >> /etc/tmux.conf
+
 

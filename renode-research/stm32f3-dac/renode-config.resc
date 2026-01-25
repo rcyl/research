@@ -1,0 +1,23 @@
+:name: STM32F3 Discovery DAC Test
+
+$name?="STM32F3_Discovery"
+$bin?=@target/thumbv7em-none-eabihf/release/stm32f3-dac
+
+mach create $name
+
+machine LoadPlatformDescription @stm32f3_dac.repl
+
+# Configure UART terminal
+showAnalyzer sysbus.usart1
+logLevel -1 sysbus.usart1
+
+# Create a PTY terminal for UART access
+emulation CreateUartPtyTerminal "term" "/tmp/uart" true
+connector Connect sysbus.usart1 term
+
+# Enable GDB server for debugging
+machine StartGdbServer 3333
+
+macro reset
+    sysbus LoadELF $bin
+runMacro $reset

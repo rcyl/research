@@ -1,0 +1,97 @@
+// STM32F3 Discovery Board Platform with CRC Peripheral
+// STM32F303VCT6: 256KB Flash, 40KB SRAM, 8KB CCM
+
+using "../stm32f3-uart/stm32f3.repl"
+
+// LED on PE9 (status indicator)
+UserLED: Miscellaneous.LED @ gpioPortE
+gpioPortE:
+    9 -> UserLED@0
+
+// CRC Calculation Unit - Python peripheral implementation
+// STM32F3 CRC uses polynomial 0x04C11DB7 (CRC-32/MPEG-2)
+crc: Python.PythonPeripheral @ sysbus 0x40023000
+    size: 0x400
+    initable: true
+    script: '''
+# STM32F3 CRC Unit Emulation
+# Default polynomial: 0x04C11DB7
+# Default initial value: 0xFFFFFFFF
+#
+# Register Map:
+#   0x00 DR   - Data Register (R/W) - Write to calculate, read result
+#   0x04 IDR  - Independent Data Register (R/W, 8-bit) - General purpose
+#   0x08 CR   - Control Register (R/W)
+#   0x10 INIT - Initial CRC Value (R/W)
+#   0x14 POL  - Polynomial (R/W)
+#
+# CR Register Bits:
+#   [0]   RESET   - Reset CRC to INIT value (self-clearing, always reads 0)
+#   [4:3] POLYSIZE - Polynomial size (00=32-bit, 01=16-bit, 10=8-bit, 11=7-bit)
+#   [6:5] REV_IN  - Input data reverse (00=none, 01=by byte, 10=by half-word, 11=by word)
+#   [7]   REV_OUT - Output data reverse
+#
+# Note: POLYSIZE, REV_IN, REV_OUT are stored but calculation uses fixed reflected CRC-32
+
+if request.isInit:
+    # CRC accumulator register - holds current CRC value
+    crc_dr = 0xFFFFFFFF
+    # Independent data register (8-bit general purpose storage)
+    crc_idr = 0x00
+    # Control register (RESET bit not stored as it's self-clearing)
+    crc_cr = 0x00
+    # Initial value register
+    crc_init = 0xFFFFFFFF
+    # Polynomial register
+    crc_pol = 0x04C11DB7
+
+    # Precomputed CRC-32 table using reflected polynomial 0xEDB88320
+    # This matches STM32 hardware behavior with default settings
+    crc_table = []
+    for i in range(256):
+        crc = i
+        for _ in range(8):
+            if crc & 1:
+                crc = (crc >> 1) ^ 0xEDB88320
+            else:
+                crc >>= 1
+        crc_table.append(crc)
+
+elif request.isRead:
+    if request.offset == 0x00:    # DR - Data Register
+        request.value = crc_dr & 0xFFFFFFFF
+    elif request.offset == 0x04:  # IDR - Independent Data Register (8-bit only)
+        request.value = crc_idr & 0xFF
+    elif request.offset == 0x08:  # CR - Control Register (RESET bit always reads 0)
+        request.value = crc_cr & 0xF8
+    elif request.offset == 0x10:  # INIT - Initial CRC Value
+        request.value = crc_init & 0xFFFFFFFF
+    elif request.offset == 0x14:  # POL - Polynomial
+        request.value = crc_pol & 0xFFFFFFFF
+    else:
+        request.value = 0
+
+elif request.isWrite:
+    if request.offset == 0x00:    # DR - Data Register (write triggers CRC calculation)
+        data = request.value & 0xFFFFFFFF
+        # Process 4 bytes in little-endian order (LSB first)
+        # This matches STM32 default byte ordering
+        for i in range(4):
+            byte = (data >> (i * 8)) & 0xFF
+            table_idx = (crc_dr ^ byte) & 0xFF
+            crc_dr = ((crc_dr >> 8) & 0x00FFFFFF) ^ crc_table[table_idx]
+
+    elif request.offset == 0x04:  # IDR - Independent Data Register
+        crc_idr = request.value & 0xFF
+
+    elif request.offset == 0x08:  # CR - Control Register
+        crc_cr = request.value & 0xF8  # Store config bits (not RESET)
+        if request.value & 0x01:      # RESET bit - reset CRC to initial value
+            crc_dr = crc_init
+
+    elif request.offset == 0x10:  # INIT - Initial CRC Value
+        crc_init = request.value & 0xFFFFFFFF
+
+    elif request.offset == 0x14:  # POL - Polynomial (stored but not used in calculation)
+        crc_pol = request.value & 0xFFFFFFFF
+'''

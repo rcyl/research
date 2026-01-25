@@ -6,7 +6,7 @@ $bin?=@target/thumbv7em-none-eabihf/release/stm32f3-uart
 
 # Create Machine & Load config
 mach create $name
-machine LoadPlatformDescription @/src/renode-research/stm32f3-uart/stm32f3_discovery.repl
+machine LoadPlatformDescription @stm32f3_discovery.repl
 
 # Create a terminal window showing the output of USART1
 showAnalyzer sysbus.usart1

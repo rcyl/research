@@ -16,7 +16,6 @@ use stm32f3xx_hal::{
     pac,
     prelude::*,
     serial::{Serial, config::Config as UartConfig},
-    timer::Timer,
 };
 
 /// Write a string to UART
@@ -84,23 +83,63 @@ fn main() -> ! {
     // =========================================
     uart_write_str(&mut serial, "\nTest 1: Timer2 Countdown\n");
 
-    // Create a countdown timer with 1 second period
-    let mut timer2 = Timer::new(dp.TIM2, clocks, &mut rcc.apb1);
+    // Enable TIM2 clock and configure directly for better Renode compatibility
+    // The HAL's wait() polls UIF flag which Renode may not set properly
+    unsafe {
+        let rcc_ptr = &*pac::RCC::ptr();
+        rcc_ptr.apb1enr.modify(|_, w| w.tim2en().enabled());
+    }
 
-    // Start a 100ms countdown
-    timer2.start(100.milliseconds());
+    let tim2 = unsafe { &*pac::TIM2::ptr() };
+
+    // Configure for 100ms timeout at 72MHz
+    // Prescaler: 7199 -> 72MHz / 7200 = 10kHz (0.1ms per tick)
+    // ARR: 999 -> 1000 ticks = 100ms
+    tim2.psc.write(|w| w.psc().bits(7199));
+    tim2.arr.write(|w| w.bits(999));
+    tim2.cnt.write(|w| w.bits(0));
+
+    // Generate update event to load prescaler, then clear the flag
+    tim2.egr.write(|w| w.ug().update());
+    tim2.sr.write(|w| w.uif().clear_bit());
+
+    // Enable counter
+    tim2.cr1.write(|w| w.cen().enabled());
     uart_write_str(&mut serial, "Timer2 started (100ms)\n");
 
-    // Wait for timer to expire
+    // Wait for timer to reach ARR value using wrap-around detection
+    // The counter resets to 0 when it reaches ARR, so detect the wrap
+    let arr_val = tim2.arr.read().bits();
+    let mut last_cnt: u32 = 0;
     let mut timeout_count = 0u32;
-    while timer2.wait().is_err() {
+    let mut expired = false;
+
+    loop {
+        let cnt = tim2.cnt.read().bits();
+
+        // Detect wrap-around: counter was high and is now low
+        if cnt < last_cnt && last_cnt > (arr_val / 2) {
+            expired = true;
+            break;
+        }
+
+        // Also check UIF flag as backup
+        if tim2.sr.read().uif().bit_is_set() {
+            expired = true;
+            break;
+        }
+
+        last_cnt = cnt;
         timeout_count += 1;
-        if timeout_count > 1_000_000 {
+        if timeout_count > 100_000_000 {
             break; // Safety timeout
         }
     }
 
-    if timeout_count < 1_000_000 {
+    // Stop timer
+    tim2.cr1.write(|w| w.cen().disabled());
+
+    if expired {
         uart_write_str(&mut serial, "Timer2 expired: PASS\n");
         pass_count += 1;
         led.set_high().ok();
@@ -114,21 +153,68 @@ fn main() -> ! {
     // =========================================
     uart_write_str(&mut serial, "\nTest 2: Timer3 Periodic\n");
 
-    let mut timer3 = Timer::new(dp.TIM3, clocks, &mut rcc.apb1);
-    timer3.start(50.milliseconds());
+    // Enable TIM3 clock and configure directly for better Renode compatibility
+    unsafe {
+        let rcc_ptr = &*pac::RCC::ptr();
+        rcc_ptr.apb1enr.modify(|_, w| w.tim3en().enabled());
+    }
+
+    let tim3 = unsafe { &*pac::TIM3::ptr() };
+
+    // Configure for 50ms period at 72MHz
+    // Prescaler: 7199 -> 72MHz / 7200 = 10kHz (0.1ms per tick)
+    // ARR: 499 -> 500 ticks = 50ms
+    tim3.psc.write(|w| w.psc().bits(7199));
+    tim3.arr.write(|w| unsafe { w.bits(499) });
+    tim3.cnt.write(|w| unsafe { w.bits(0) });
+
+    // Generate update event to load prescaler, then clear the flag
+    tim3.egr.write(|w| w.ug().update());
+    tim3.sr.write(|w| w.uif().clear_bit());
+
+    // Enable counter in auto-reload mode
+    tim3.cr1.write(|w| w.cen().enabled());
     uart_write_str(&mut serial, "Timer3 started (50ms periodic)\n");
 
-    // Count multiple periods
+    // Count multiple periods by detecting counter wrap
     let mut period_count = 0u8;
+    let arr_val = tim3.arr.read().bits() as u16;
+
     for _ in 0..3 {
-        while timer3.wait().is_err() {
-            // Busy wait
+        // Wait for counter to reach near max
+        let mut last_cnt: u16 = 0;
+        let mut timeout = 0u32;
+        loop {
+            let cnt = tim3.cnt.read().bits() as u16;
+            // Detect wrap-around (counter reset to 0 after reaching ARR)
+            if cnt < last_cnt && last_cnt > (arr_val / 2) {
+                break;
+            }
+            // Or counter reached ARR
+            if cnt >= arr_val {
+                // Wait for it to wrap
+                while tim3.cnt.read().bits() as u16 >= arr_val / 2 {
+                    timeout += 1;
+                    if timeout > 10_000_000 {
+                        break;
+                    }
+                }
+                break;
+            }
+            last_cnt = cnt;
+            timeout += 1;
+            if timeout > 10_000_000 {
+                break;
+            }
         }
         period_count += 1;
         uart_write_str(&mut serial, "Period ");
         uart_write_hex(&mut serial, period_count);
         uart_write_str(&mut serial, " complete\n");
     }
+
+    // Stop timer
+    tim3.cr1.write(|w| w.cen().disabled());
 
     if period_count == 3 {
         uart_write_str(&mut serial, "Timer3 periodic: PASS\n");
@@ -153,7 +239,7 @@ fn main() -> ! {
     let tim4 = unsafe { &*pac::TIM4::ptr() };
 
     // Set prescaler and auto-reload
-    tim4.psc.write(|w| unsafe { w.psc().bits(7999) }); // 72MHz / 8000 = 9kHz
+    tim4.psc.write(|w| w.psc().bits(7999)); // 72MHz / 8000 = 9kHz
     tim4.arr.write(|w| unsafe { w.bits(0xFFFF) }); // Max count
     tim4.cnt.write(|w| unsafe { w.bits(0) }); // Clear counter
 

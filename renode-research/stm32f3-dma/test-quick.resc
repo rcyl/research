@@ -2,7 +2,7 @@
 $bin=@target/thumbv7em-none-eabihf/release/stm32f3-dma
 
 mach create "STM32F3_DMA"
-machine LoadPlatformDescription @/src/renode-research/stm32f3-dma/stm32f3_dma.repl
+machine LoadPlatformDescription @stm32f3_dma.repl
 sysbus LoadELF $bin
 
 # Set up UART logging

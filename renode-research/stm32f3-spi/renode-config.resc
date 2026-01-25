@@ -6,7 +6,7 @@ $bin?=@target/thumbv7em-none-eabihf/release/stm32f3-spi
 
 # Create Machine & Load config
 mach create $name
-machine LoadPlatformDescription @/src/stm32f3-spi/stm32f3_spi.repl
+machine LoadPlatformDescription @stm32f3_spi.repl
 
 # Create a terminal window showing the output of USART1
 showAnalyzer sysbus.usart1

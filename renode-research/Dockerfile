@@ -1,4 +1,4 @@
-FROM debian:bookworm
+FROM localhost/claude:latest
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -17,30 +17,14 @@ RUN apt-get update && apt-get install -y \
     # GDB for ARM debugging
     gdb-multiarch \
     # Utilities
-    unzip minicom \
+    unzip minicom coreutils \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Rust via rustup
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-
-# Add Rust to PATH
-ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Add thumb toolchain
 RUN rustup target add thumbv7em-none-eabihf
 
 # Create python symlink (required by libopencm3 build)
 RUN ln -s /usr/bin/python3 /usr/bin/python
-
-# Add claude code
-RUN curl -fsSL https://claude.ai/install.sh | bash
-
-# USER $USER_NAME
-WORKDIR /src
-ENV IS_SANDBOX=1
-RUN echo "alias claude-yolo='claude --dangerously-skip-permissions'" >> "$HOME/.bashrc"
-
-ENV PATH="/root/.local/bin:${PATH}"
 
 # Install Renode 1.16.0 (ARM64 .NET portable version)
 ARG RENODE_VERSION=1.16.0

@@ -1,0 +1,15 @@
+14:28:19.8576 [INFO] System bus created.
+14:28:19.9114 [WARNING] Translation cache size 536870912 is larger than maximum allowed 134217728. It will be clamped to maximum
+14:28:19.9425 [INFO] sysbus: Loading block of 404 bytes length at 0x8000000.
+14:28:19.9426 [INFO] sysbus: Loading block of 1396 bytes length at 0x8000194.
+14:28:19.9426 [INFO] sysbus: Loading block of 236 bytes length at 0x8000708.
+14:28:19.9426 [INFO] sysbus: Loading block of 4 bytes length at 0x20000000.
+14:28:19.9468 [INFO] cpu: Guessing VectorTableOffset value to be 0x8000000.
+14:28:19.9470 [INFO] cpu: Setting initial values: PC = 0x8000195, SP = 0x2000A000.
+14:28:19.9477 [INFO] machine-0: Machine started.
+14:28:19.9490 [WARNING] sysbus: [cpu: 0x80002DA] (tag: 'FLASH_INTERFACE') ReadDoubleWord from non existing peripheral at 0x40022000, returning 0x00000000.
+14:28:19.9490 [WARNING] sysbus: [cpu: 0x80002EA] (tag: 'FLASH_INTERFACE') WriteDoubleWord to non existing peripheral at 0x40022000, value 0x0.
+14:28:19.9503 [WARNING] sysbus: [cpu: 0x80003F6] (tag: 'PWR') ReadDoubleWord from non existing peripheral at 0x40007000, returning 0x00000000.
+14:28:19.9503 [WARNING] sysbus: [cpu: 0x80003FC] (tag: 'PWR') WriteDoubleWord to non existing peripheral at 0x40007000, value 0x100.
+14:28:25.0871 [INFO] machine-0: Machine paused.
+14:28:25.3046 [INFO] machine-0: Machine resumed.

@@ -1,0 +1,21 @@
+// STM32F3 Discovery Board Platform with ADC
+// STM32F303VCT6: 256KB Flash, 40KB SRAM, 8KB CCM
+
+using "../stm32f3-uart/stm32f3.repl"
+
+// User Button on PA0
+UserButton: Miscellaneous.Button @ gpioPortA
+    -> gpioPortA@0
+
+// LED on PE9
+UserLED: Miscellaneous.LED @ gpioPortE
+
+gpioPortE:
+    9 -> UserLED@0
+
+// ADC1 - Analog to Digital Converter
+// Using STM32F0_ADC which is compatible with F3
+adc1: Analog.STM32F0_ADC @ sysbus 0x50000000
+    referenceVoltage: 3.3
+    externalEventFrequency: 1000
+    IRQ -> nvic@18

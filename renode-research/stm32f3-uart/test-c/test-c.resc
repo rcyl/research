@@ -5,7 +5,7 @@ $name?="STM32F3_Discovery"
 $bin?=@test-f3.elf
 
 mach create $name
-machine LoadPlatformDescription @/src/renode-research/stm32f3-uart/stm32f3_discovery.repl
+machine LoadPlatformDescription @../stm32f3_discovery.repl
 
 showAnalyzer sysbus.usart1
 

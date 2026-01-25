@@ -5,8 +5,8 @@ Test Setup                    Reset Emulation
 Resource                      ${RENODEKEYWORDS}
 
 *** Variables ***
-${PLATFORM}                   /src/renode-research/stm32f3-dma/stm32f3_dma.repl
-${ELF}                        /src/renode-research/stm32f3-dma/target/thumbv7em-none-eabihf/release/stm32f3-dma
+${PLATFORM}                   ${CURDIR}/../stm32f3_dma.repl
+${ELF}                        ${CURDIR}/../target/thumbv7em-none-eabihf/release/stm32f3-dma
 
 *** Test Cases ***
 Should Initialize DMA And Report

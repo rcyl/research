@@ -1,0 +1,27 @@
+:name: STM32F3 IWDG Test
+:description: This script runs an IWDG (Independent Watchdog) test on STM32F3
+
+$name?="STM32F3_IWDG"
+$bin?=@target/thumbv7em-none-eabihf/release/stm32f3-iwdg
+
+# Create Machine & Load config
+mach create $name
+machine LoadPlatformDescription @stm32f3_iwdg.repl
+
+# Create a terminal window showing the output of USART1
+showAnalyzer sysbus.usart1
+
+# Set up UART PTY terminal for programmatic access
+logLevel -1 sysbus.usart1
+emulation CreateUartPtyTerminal "term" "/tmp/uart" true
+connector Connect sysbus.usart1 term
+
+# Enable GDB
+machine StartGdbServer 3333
+
+macro reset
+"""
+    sysbus LoadELF $bin
+"""
+
+runMacro $reset

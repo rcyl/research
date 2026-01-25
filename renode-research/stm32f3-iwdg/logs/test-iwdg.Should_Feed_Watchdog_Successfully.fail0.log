@@ -1,0 +1,20 @@
+14:25:56.6839 [INFO] System bus created.
+14:25:56.7352 [WARNING] Translation cache size 536870912 is larger than maximum allowed 134217728. It will be clamped to maximum
+14:25:56.7676 [INFO] sysbus: Loading block of 404 bytes length at 0x8000000.
+14:25:56.7678 [INFO] sysbus: Loading block of 1128 bytes length at 0x8000194.
+14:25:56.7678 [INFO] sysbus: Loading block of 188 bytes length at 0x80005FC.
+14:25:56.7678 [INFO] sysbus: Loading block of 4 bytes length at 0x20000000.
+14:25:56.7717 [INFO] cpu: Guessing VectorTableOffset value to be 0x8000000.
+14:25:56.7719 [INFO] cpu: Setting initial values: PC = 0x8000195, SP = 0x2000A000.
+14:25:56.7725 [INFO] machine-0: Machine started.
+14:25:56.7740 [WARNING] sysbus: [cpu: 0x80002B4] (tag: 'FLASH_INTERFACE') ReadDoubleWord from non existing peripheral at 0x40022000, returning 0x00000000.
+14:25:56.7740 [WARNING] sysbus: [cpu: 0x80002C4] (tag: 'FLASH_INTERFACE') WriteDoubleWord to non existing peripheral at 0x40022000, value 0x0.
+14:25:56.7753 [WARNING] iwdg: [cpu: 0x80003D6] Attempted Word write isn't supported by the peripheral. Offset 0x0, value 0x5555.
+14:25:56.7753 [WARNING] iwdg: [cpu: 0x80003DC] Attempted Word write isn't supported by the peripheral. Offset 0x4, value 0x0.
+14:25:56.7753 [WARNING] iwdg: [cpu: 0x80003E4] Attempted Word write isn't supported by the peripheral. Offset 0x8, value 0xFFF.
+14:25:56.7753 [WARNING] iwdg: [cpu: 0x800040C] Attempted Word write isn't supported by the peripheral. Offset 0x0, value 0xCCCC.
+14:25:56.7797 [WARNING] iwdg: [cpu: 0x8000468] Attempted Word write isn't supported by the peripheral. Offset 0x0, value 0xAAAA.
+14:25:56.7910 [WARNING] iwdg: [cpu: 0x8000468] Attempted Word write isn't supported by the peripheral. Offset 0x0, value 0xAAAA. (2)
+14:25:56.7910 [WARNING] iwdg: [cpu: 0x8000506] Attempted Word write isn't supported by the peripheral. Offset 0x0, value 0xAAAA.
+14:26:01.9140 [INFO] machine-0: Machine paused.
+14:26:02.1295 [INFO] machine-0: Machine resumed.

@@ -6,7 +6,7 @@ $bin?=@target/thumbv7em-none-eabihf/release/stm32f3-timer
 
 # Create Machine & Load config
 mach create $name
-machine LoadPlatformDescription @/src/stm32f3-timer/stm32f3_timer.repl
+machine LoadPlatformDescription @stm32f3_timer.repl
 
 # Create a terminal window showing the output of USART1
 showAnalyzer sysbus.usart1

@@ -1,0 +1,212 @@
+// STM32F3 Discovery Board Platform with DAC Peripheral
+// STM32F303VCT6: 256KB Flash, 40KB SRAM, 8KB CCM
+
+using "../stm32f3-uart/stm32f3.repl"
+
+// LED on PE9 (status indicator)
+UserLED: Miscellaneous.LED @ gpioPortE
+gpioPortE:
+    9 -> UserLED@0
+
+// DAC - Digital to Analog Converter
+// 2 channels, 12-bit resolution
+// PA4 = DAC1 output, PA5 = DAC2 output
+dac: Python.PythonPeripheral @ sysbus 0x40007400
+    size: 0x400
+    initable: true
+    script: '''
+# STM32F3 DAC Unit Emulation
+# 2 channels, 12-bit resolution (0-4095)
+#
+# Register Map:
+#   0x00 CR      - Control Register
+#   0x04 SWTRIGR - Software Trigger Register (write-only)
+#   0x08 DHR12R1 - Channel 1 12-bit right-aligned data
+#   0x0C DHR12L1 - Channel 1 12-bit left-aligned data
+#   0x10 DHR8R1  - Channel 1 8-bit right-aligned data
+#   0x14 DHR12R2 - Channel 2 12-bit right-aligned data
+#   0x18 DHR12L2 - Channel 2 12-bit left-aligned data
+#   0x1C DHR8R2  - Channel 2 8-bit right-aligned data
+#   0x20 DHR12RD - Dual 12-bit right-aligned data
+#   0x24 DHR12LD - Dual 12-bit left-aligned data
+#   0x28 DHR8RD  - Dual 8-bit right-aligned data
+#   0x2C DOR1    - Channel 1 data output register (read-only)
+#   0x30 DOR2    - Channel 2 data output register (read-only)
+#   0x34 SR      - Status Register
+#
+# CR Register Bits (per channel, CH2 bits offset by 16):
+#   [0]    EN    - DAC channel enable
+#   [1]    BOFF  - Output buffer disable
+#   [2]    TEN   - Trigger enable
+#   [5:3]  TSEL  - Trigger selection (111 = software trigger)
+#   [11:6] WAVEx - Wave generation (not implemented)
+#   [15:12] MAMPx - Mask/amplitude (not implemented)
+#
+# Behavior:
+#   - If TEN=0: DHR value transfers to DOR immediately on write
+#   - If TEN=1: DHR value transfers to DOR on trigger event
+
+if request.isInit:
+    # Control register
+    dac_cr = 0
+    # Channel 1 data holding registers
+    dac_dhr12r1 = 0
+    dac_dhr12l1 = 0
+    dac_dhr8r1 = 0
+    # Channel 2 data holding registers
+    dac_dhr12r2 = 0
+    dac_dhr12l2 = 0
+    dac_dhr8r2 = 0
+    # Dual channel registers
+    dac_dhr12rd = 0
+    dac_dhr12ld = 0
+    dac_dhr8rd = 0
+    # Data output registers (updated on trigger or immediately if TEN=0)
+    dac_dor1 = 0
+    dac_dor2 = 0
+    # Status register
+    dac_sr = 0
+
+elif request.isRead:
+    if request.offset == 0x00:      # CR
+        request.value = dac_cr
+    elif request.offset == 0x04:    # SWTRIGR (write-only, reads as 0)
+        request.value = 0
+    elif request.offset == 0x08:    # DHR12R1
+        request.value = dac_dhr12r1 & 0xFFF
+    elif request.offset == 0x0C:    # DHR12L1
+        request.value = dac_dhr12l1 & 0xFFF0
+    elif request.offset == 0x10:    # DHR8R1
+        request.value = dac_dhr8r1 & 0xFF
+    elif request.offset == 0x14:    # DHR12R2
+        request.value = dac_dhr12r2 & 0xFFF
+    elif request.offset == 0x18:    # DHR12L2
+        request.value = dac_dhr12l2 & 0xFFF0
+    elif request.offset == 0x1C:    # DHR8R2
+        request.value = dac_dhr8r2 & 0xFF
+    elif request.offset == 0x20:    # DHR12RD
+        request.value = dac_dhr12rd
+    elif request.offset == 0x24:    # DHR12LD
+        request.value = dac_dhr12ld
+    elif request.offset == 0x28:    # DHR8RD
+        request.value = dac_dhr8rd
+    elif request.offset == 0x2C:    # DOR1 (read-only)
+        request.value = dac_dor1 & 0xFFF
+    elif request.offset == 0x30:    # DOR2 (read-only)
+        request.value = dac_dor2 & 0xFFF
+    elif request.offset == 0x34:    # SR
+        request.value = dac_sr
+    else:
+        request.value = 0
+
+elif request.isWrite:
+    if request.offset == 0x00:      # CR
+        dac_cr = request.value
+        # When channel enabled with TEN=0, update DOR from current DHR
+        ch1_en = dac_cr & 0x01
+        ch1_ten = dac_cr & 0x04
+        ch2_en = (dac_cr >> 16) & 0x01
+        ch2_ten = (dac_cr >> 16) & 0x04
+        if ch1_en and not ch1_ten:
+            dac_dor1 = dac_dhr12r1
+        if ch2_en and not ch2_ten:
+            dac_dor2 = dac_dhr12r2
+
+    elif request.offset == 0x04:    # SWTRIGR (software trigger)
+        # SWTRIG1 (bit 0) triggers CH1, SWTRIG2 (bit 1) triggers CH2
+        ch1_en = dac_cr & 0x01
+        ch2_en = (dac_cr >> 16) & 0x01
+        if (request.value & 0x01) and ch1_en:
+            dac_dor1 = dac_dhr12r1
+        if (request.value & 0x02) and ch2_en:
+            dac_dor2 = dac_dhr12r2
+
+    elif request.offset == 0x08:    # DHR12R1
+        dac_dhr12r1 = request.value & 0xFFF
+        # Immediate transfer if CH1 enabled and TEN=0
+        ch1_en = dac_cr & 0x01
+        ch1_ten = dac_cr & 0x04
+        if ch1_en and not ch1_ten:
+            dac_dor1 = dac_dhr12r1
+
+    elif request.offset == 0x0C:    # DHR12L1
+        dac_dhr12l1 = request.value & 0xFFF0
+        dac_dhr12r1 = (dac_dhr12l1 >> 4) & 0xFFF
+        ch1_en = dac_cr & 0x01
+        ch1_ten = dac_cr & 0x04
+        if ch1_en and not ch1_ten:
+            dac_dor1 = dac_dhr12r1
+
+    elif request.offset == 0x10:    # DHR8R1
+        dac_dhr8r1 = request.value & 0xFF
+        dac_dhr12r1 = dac_dhr8r1 << 4
+        ch1_en = dac_cr & 0x01
+        ch1_ten = dac_cr & 0x04
+        if ch1_en and not ch1_ten:
+            dac_dor1 = dac_dhr12r1
+
+    elif request.offset == 0x14:    # DHR12R2
+        dac_dhr12r2 = request.value & 0xFFF
+        ch2_en = (dac_cr >> 16) & 0x01
+        ch2_ten = (dac_cr >> 16) & 0x04
+        if ch2_en and not ch2_ten:
+            dac_dor2 = dac_dhr12r2
+
+    elif request.offset == 0x18:    # DHR12L2
+        dac_dhr12l2 = request.value & 0xFFF0
+        dac_dhr12r2 = (dac_dhr12l2 >> 4) & 0xFFF
+        ch2_en = (dac_cr >> 16) & 0x01
+        ch2_ten = (dac_cr >> 16) & 0x04
+        if ch2_en and not ch2_ten:
+            dac_dor2 = dac_dhr12r2
+
+    elif request.offset == 0x1C:    # DHR8R2
+        dac_dhr8r2 = request.value & 0xFF
+        dac_dhr12r2 = dac_dhr8r2 << 4
+        ch2_en = (dac_cr >> 16) & 0x01
+        ch2_ten = (dac_cr >> 16) & 0x04
+        if ch2_en and not ch2_ten:
+            dac_dor2 = dac_dhr12r2
+
+    elif request.offset == 0x20:    # DHR12RD (dual)
+        dac_dhr12rd = request.value
+        dac_dhr12r1 = request.value & 0xFFF
+        dac_dhr12r2 = (request.value >> 16) & 0xFFF
+        ch1_en = dac_cr & 0x01
+        ch1_ten = dac_cr & 0x04
+        ch2_en = (dac_cr >> 16) & 0x01
+        ch2_ten = (dac_cr >> 16) & 0x04
+        if ch1_en and not ch1_ten:
+            dac_dor1 = dac_dhr12r1
+        if ch2_en and not ch2_ten:
+            dac_dor2 = dac_dhr12r2
+
+    elif request.offset == 0x24:    # DHR12LD (dual)
+        dac_dhr12ld = request.value
+        dac_dhr12r1 = (request.value >> 4) & 0xFFF
+        dac_dhr12r2 = (request.value >> 20) & 0xFFF
+        ch1_en = dac_cr & 0x01
+        ch1_ten = dac_cr & 0x04
+        ch2_en = (dac_cr >> 16) & 0x01
+        ch2_ten = (dac_cr >> 16) & 0x04
+        if ch1_en and not ch1_ten:
+            dac_dor1 = dac_dhr12r1
+        if ch2_en and not ch2_ten:
+            dac_dor2 = dac_dhr12r2
+
+    elif request.offset == 0x28:    # DHR8RD (dual)
+        dac_dhr8rd = request.value
+        dac_dhr12r1 = (request.value & 0xFF) << 4
+        dac_dhr12r2 = ((request.value >> 8) & 0xFF) << 4
+        ch1_en = dac_cr & 0x01
+        ch1_ten = dac_cr & 0x04
+        ch2_en = (dac_cr >> 16) & 0x01
+        ch2_ten = (dac_cr >> 16) & 0x04
+        if ch1_en and not ch1_ten:
+            dac_dor1 = dac_dhr12r1
+        if ch2_en and not ch2_ten:
+            dac_dor2 = dac_dhr12r2
+
+    elif request.offset == 0x34:    # SR (DMAUDR bits are write-1-to-clear)
+        dac_sr &= ~(request.value & 0x20002000)
+'''

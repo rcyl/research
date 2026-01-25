@@ -5,8 +5,8 @@ Test Setup                    Reset Emulation
 Resource                      ${RENODEKEYWORDS}
 
 *** Variables ***
-${PLATFORM}                   /src/stm32f3-i2c/stm32f3_i2c.repl
-${ELF}                        /src/stm32f3-i2c/target/thumbv7em-none-eabihf/release/stm32f3-i2c
+${PLATFORM}                   ${CURDIR}/../stm32f3_i2c.repl
+${ELF}                        ${CURDIR}/../target/thumbv7em-none-eabihf/release/stm32f3-i2c
 
 *** Test Cases ***
 Should Initialize I2C And Report

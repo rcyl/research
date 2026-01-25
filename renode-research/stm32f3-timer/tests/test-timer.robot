@@ -5,8 +5,8 @@ Test Setup                    Reset Emulation
 Resource                      ${RENODEKEYWORDS}
 
 *** Variables ***
-${PLATFORM}                   /src/renode-research/stm32f3-timer/stm32f3_timer.repl
-${ELF}                        /src/renode-research/stm32f3-timer/target/thumbv7em-none-eabihf/release/stm32f3-timer
+${PLATFORM}                   ${CURDIR}/../stm32f3_timer.repl
+${ELF}                        ${CURDIR}/../target/thumbv7em-none-eabihf/release/stm32f3-timer
 
 *** Test Cases ***
 Should Initialize Timer And Report

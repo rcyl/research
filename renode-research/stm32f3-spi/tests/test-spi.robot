@@ -5,8 +5,8 @@ Test Setup                    Reset Emulation
 Resource                      ${RENODEKEYWORDS}
 
 *** Variables ***
-${PLATFORM}                   /src/renode-research/stm32f3-spi/stm32f3_spi.repl
-${ELF}                        /src/renode-research/stm32f3-spi/target/thumbv7em-none-eabihf/release/stm32f3-spi
+${PLATFORM}                   ${CURDIR}/../stm32f3_spi.repl
+${ELF}                        ${CURDIR}/../target/thumbv7em-none-eabihf/release/stm32f3-spi
 
 *** Test Cases ***
 Should Initialize SPI And Report
