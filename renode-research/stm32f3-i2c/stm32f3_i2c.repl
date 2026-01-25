@@ -15,4 +15,4 @@ gpioPortE:
 
 // I2C1 Sensor: Attach a BME280 temperature/humidity/pressure sensor
 // Address 0x76 (or 0x77 with SDO high)
-i2cSensor: Sensors.BME280 @ i2c1 0x76
+i2cSensor: I2C.BME280 @ i2c1 0x76
