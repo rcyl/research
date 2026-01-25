@@ -1,0 +1,21 @@
+[package]
+name = "renode-uart-rust"
+version = "0.1.0"
+edition = "2021"
+authors = ["Renode Research"]
+
+[dependencies]
+cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
+cortex-m-rt = "0.7"
+panic-halt = "0.2"
+stm32f4xx-hal = { version = "0.21", features = ["stm32f407"] }
+
+[profile.dev]
+opt-level = "s"
+debug = true
+lto = false
+
+[profile.release]
+opt-level = "s"
+debug = true
+lto = true

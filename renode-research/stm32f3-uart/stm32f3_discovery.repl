@@ -1,0 +1,23 @@
+// STM32F3 Discovery Board Platform
+// STM32F303VCT6: 256KB Flash, 40KB SRAM, 8KB CCM
+
+using "/src/renode-research/stm32f3-uart/stm32f3.repl"
+
+// User Button on PA0 (directly active high)
+UserButton: Miscellaneous.Button @ gpioPortA
+    -> gpioPortA@0
+
+// LEDs are on PE8-PE15 on STM32F3 Discovery
+// LD3 (Red)    - PE9
+// LD4 (Blue)   - PE8
+// LD5 (Orange) - PE10
+// LD6 (Green)  - PE15
+// LD7 (Green)  - PE11
+// LD8 (Orange) - PE14
+// LD9 (Blue)   - PE12
+// LD10 (Red)   - PE13
+
+UserLED: Miscellaneous.LED @ gpioPortE
+
+gpioPortE:
+    9 -> UserLED@0

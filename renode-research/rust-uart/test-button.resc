@@ -1,0 +1,11 @@
+include @renode-config.resc
+start
+sleep 2
+echo "[TEST] Pressing button..."
+sysbus.gpioPortA.UserButton Press
+sleep 0.5
+echo "[TEST] Releasing button..."
+sysbus.gpioPortA.UserButton Release
+sleep 2
+echo "[TEST] Done!"
+quit

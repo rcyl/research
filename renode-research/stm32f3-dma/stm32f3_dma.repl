@@ -1,0 +1,14 @@
+// STM32F3 Discovery Board Platform with DMA Test
+// STM32F303VCT6: 256KB Flash, 40KB SRAM, 8KB CCM
+
+using "/src/renode-research/stm32f3-uart/stm32f3.repl"
+
+// User Button on PA0
+UserButton: Miscellaneous.Button @ gpioPortA
+    -> gpioPortA@0
+
+// LED on PE9
+UserLED: Miscellaneous.LED @ gpioPortE
+
+gpioPortE:
+    9 -> UserLED@0

@@ -1,0 +1,28 @@
+:name: STM32F4 Discovery Rust UART
+:description: This script runs the Rust UART example on stm32f4 discovery
+
+$name?="STM32F4_Discovery"
+$bin?=@target/thumbv7em-none-eabihf/release/renode-uart-rust
+
+# Create Machine & Load config
+mach create $name
+machine LoadPlatformDescription @platforms/boards/stm32f4_discovery-kit.repl
+machine LoadPlatformDescription @add-ccm.repl
+
+# Create a terminal window showing the output of UART2
+showAnalyzer sysbus.usart2
+
+# Set up UART PTY terminal for programmatic access
+logLevel -1 sysbus.usart2
+emulation CreateUartPtyTerminal "term" "/tmp/uart" true
+connector Connect sysbus.usart2 term
+
+# Enable GDB
+machine StartGdbServer 3333
+
+macro reset
+"""
+    sysbus LoadELF $bin
+"""
+
+runMacro $reset

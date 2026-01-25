@@ -1,0 +1,23 @@
+FROM debian:bookworm
+
+RUN apt-get update && apt-get install -y \
+    nodejs npm curl wget podman \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust via rustup
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+# Add Rust to PATH
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install claude code
+RUN curl -fsSL https://claude.ai/install.sh | bash
+
+# USER $USER_NAME
+WORKDIR /src
+RUN echo "alias claude-yolo='claude --dangerously-skip-permissions'" >> ~/.bashrc
+
+ENV IS_SANDBOX=1
+ENV TERM=xterm-256color
+ENV PATH="/root/.local/bin:${PATH}"
+

@@ -1,0 +1,21 @@
+[package]
+name = "stm32f3-uart"
+version = "0.1.0"
+edition = "2021"
+authors = ["Renode Research"]
+
+[dependencies]
+cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
+cortex-m-rt = "0.7"
+panic-halt = "0.2"
+stm32f3xx-hal = { version = "0.10", features = ["stm32f303xc", "rt"] }
+
+[profile.dev]
+opt-level = "s"
+debug = true
+lto = false
+
+[profile.release]
+opt-level = "s"
+debug = true
+lto = true

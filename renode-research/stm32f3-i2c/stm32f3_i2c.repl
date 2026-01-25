@@ -1,0 +1,18 @@
+// STM32F3 Discovery Board Platform with I2C Sensor
+// STM32F303VCT6: 256KB Flash, 40KB SRAM, 8KB CCM
+
+using "/src/stm32f3-uart/stm32f3.repl"
+
+// User Button on PA0
+UserButton: Miscellaneous.Button @ gpioPortA
+    -> gpioPortA@0
+
+// LED on PE9
+UserLED: Miscellaneous.LED @ gpioPortE
+
+gpioPortE:
+    9 -> UserLED@0
+
+// I2C1 Sensor: Attach a BME280 temperature/humidity/pressure sensor
+// Address 0x76 (or 0x77 with SDO high)
+i2cSensor: Sensors.BME280 @ i2c1 0x76
