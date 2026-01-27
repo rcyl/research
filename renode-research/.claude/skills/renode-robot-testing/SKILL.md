@@ -1,3 +1,8 @@
+---
+name: renode-robot-testing
+description: Use this skill when running Renode emulator tests with Robot Framework for STM32F3 embedded Rust projects. Covers test commands, Robot file structure, UART testing, debugging failures, and known Renode limitations.
+---
+
 # Running Renode Robot Tests for Embedded Rust Projects
 
 ## Overview
