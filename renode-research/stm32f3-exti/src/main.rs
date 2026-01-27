@@ -15,43 +15,19 @@ use core::cell::RefCell;
 use core::sync::atomic::{AtomicU32, Ordering};
 use cortex_m::interrupt::Mutex;
 use cortex_m_rt::entry;
+use stm32f3_common::{constants, delay, uart_write_hex, uart_write_str};
 use stm32f3xx_hal::{
     pac::{self, interrupt, EXTI, NVIC},
     prelude::*,
-    serial::{Serial, config::Config as UartConfig},
+    serial::{config::Config as UartConfig, Serial},
 };
 
 // Global interrupt counter
 static INTERRUPT_COUNT: AtomicU32 = AtomicU32::new(0);
 static RISING_EDGE_COUNT: AtomicU32 = AtomicU32::new(0);
-static FALLING_EDGE_COUNT: AtomicU32 = AtomicU32::new(0);
 
 // Shared EXTI peripheral for clearing pending flags
 static EXTI_PERIPHERAL: Mutex<RefCell<Option<EXTI>>> = Mutex::new(RefCell::new(None));
-
-/// Write a string to UART
-fn uart_write_str<W: core::fmt::Write>(uart: &mut W, s: &str) {
-    for c in s.chars() {
-        if c == '\n' {
-            let _ = uart.write_char('\r');
-        }
-        let _ = uart.write_char(c);
-    }
-}
-
-/// Write a hex byte to UART
-fn uart_write_hex<W: core::fmt::Write>(uart: &mut W, byte: u8) {
-    const HEX_CHARS: &[u8] = b"0123456789ABCDEF";
-    let _ = uart.write_char(HEX_CHARS[(byte >> 4) as usize] as char);
-    let _ = uart.write_char(HEX_CHARS[(byte & 0x0F) as usize] as char);
-}
-
-/// Simple delay loop
-fn delay(cycles: u32) {
-    for _ in 0..cycles {
-        cortex_m::asm::nop();
-    }
-}
 
 /// EXTI0 interrupt handler (PA0)
 #[interrupt]
@@ -92,11 +68,19 @@ fn main() -> ! {
     let mut gpioe = dp.GPIOE.split(&mut rcc.ahb);
 
     // Configure LED on PE9 as output (for status indication)
-    let mut led = gpioe.pe9.into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+    let mut led = gpioe
+        .pe9
+        .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
 
     // Configure USART1 pins for debug output
-    let tx_pin = gpioa.pa9.into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
-    let rx_pin = gpioa.pa10.into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+    let tx_pin =
+        gpioa
+            .pa9
+            .into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+    let rx_pin =
+        gpioa
+            .pa10
+            .into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
 
     // Set up USART1 at 115200 baud
     let mut serial = Serial::new(
@@ -110,7 +94,9 @@ fn main() -> ! {
     uart_write_str(&mut serial, "EXTI Peripheral Test\n");
 
     // Configure PA0 as input for EXTI
-    let _pa0 = gpioa.pa0.into_pull_down_input(&mut gpioa.moder, &mut gpioa.pupdr);
+    let _pa0 = gpioa
+        .pa0
+        .into_pull_down_input(&mut gpioa.moder, &mut gpioa.pupdr);
 
     // Enable SYSCFG clock for EXTI configuration
     // On STM32F3, SYSCFG is on APB2
@@ -161,7 +147,7 @@ fn main() -> ! {
     let initial_count = INTERRUPT_COUNT.load(Ordering::SeqCst);
 
     // Wait for interrupt with timeout
-    let mut timeout = 500000u32;
+    let mut timeout = constants::INPUT_TIMEOUT;
     while timeout > 0 && INTERRUPT_COUNT.load(Ordering::SeqCst) == initial_count {
         timeout -= 1;
         delay(10);
@@ -185,7 +171,7 @@ fn main() -> ! {
     let count_before_release = INTERRUPT_COUNT.load(Ordering::SeqCst);
 
     // Wait for another interrupt (falling edge)
-    timeout = 500000;
+    timeout = constants::INPUT_TIMEOUT;
     while timeout > 0 && INTERRUPT_COUNT.load(Ordering::SeqCst) == count_before_release {
         timeout -= 1;
         delay(10);

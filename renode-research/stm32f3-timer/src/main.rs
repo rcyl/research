@@ -12,36 +12,12 @@
 use panic_halt as _;
 
 use cortex_m_rt::entry;
+use stm32f3_common::{constants, uart_write_hex, uart_write_hex32, uart_write_str};
 use stm32f3xx_hal::{
     pac,
     prelude::*,
-    serial::{Serial, config::Config as UartConfig},
+    serial::{config::Config as UartConfig, Serial},
 };
-
-/// Write a string to UART
-fn uart_write_str<W: core::fmt::Write>(uart: &mut W, s: &str) {
-    for c in s.chars() {
-        if c == '\n' {
-            let _ = uart.write_char('\r');
-        }
-        let _ = uart.write_char(c);
-    }
-}
-
-/// Write a hex byte to UART
-fn uart_write_hex<W: core::fmt::Write>(uart: &mut W, byte: u8) {
-    const HEX_CHARS: &[u8] = b"0123456789ABCDEF";
-    let _ = uart.write_char(HEX_CHARS[(byte >> 4) as usize] as char);
-    let _ = uart.write_char(HEX_CHARS[(byte & 0x0F) as usize] as char);
-}
-
-/// Write a 32-bit hex value to UART
-fn uart_write_hex32<W: core::fmt::Write>(uart: &mut W, val: u32) {
-    uart_write_hex(uart, ((val >> 24) & 0xFF) as u8);
-    uart_write_hex(uart, ((val >> 16) & 0xFF) as u8);
-    uart_write_hex(uart, ((val >> 8) & 0xFF) as u8);
-    uart_write_hex(uart, (val & 0xFF) as u8);
-}
 
 #[entry]
 fn main() -> ! {
@@ -58,11 +34,19 @@ fn main() -> ! {
     let mut gpioe = dp.GPIOE.split(&mut rcc.ahb);
 
     // Configure LED on PE9 as output
-    let mut led = gpioe.pe9.into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+    let mut led = gpioe
+        .pe9
+        .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
 
     // Configure USART1 pins for debug output
-    let tx_pin = gpioa.pa9.into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
-    let rx_pin = gpioa.pa10.into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+    let tx_pin =
+        gpioa
+            .pa9
+            .into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+    let rx_pin =
+        gpioa
+            .pa10
+            .into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
 
     // Set up USART1 at 115200 baud
     let mut serial = Serial::new(
@@ -131,7 +115,7 @@ fn main() -> ! {
 
         last_cnt = cnt;
         timeout_count += 1;
-        if timeout_count > 100_000_000 {
+        if timeout_count > constants::TIMER_TIMEOUT {
             break; // Safety timeout
         }
     }

@@ -6,7 +6,7 @@ Resource                      ${RENODEKEYWORDS}
 
 *** Variables ***
 ${PLATFORM}                   ${CURDIR}/../stm32f3_spi.repl
-${ELF}                        ${CURDIR}/../target/thumbv7em-none-eabihf/release/stm32f3-spi
+${ELF}                        ${CURDIR}/../../target/thumbv7em-none-eabihf/release/stm32f3-spi
 
 *** Test Cases ***
 Should Initialize SPI And Report

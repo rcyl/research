@@ -12,21 +12,12 @@
 use panic_halt as _;
 
 use cortex_m_rt::entry;
+use stm32f3_common::uart_write_str;
 use stm32f3xx_hal::{
     pac,
     prelude::*,
-    serial::{Serial, config::Config},
+    serial::{config::Config, Serial},
 };
-
-/// Write a string to UART, converting \n to \r\n
-fn uart_write_str<W: core::fmt::Write>(uart: &mut W, s: &str) {
-    for c in s.chars() {
-        if c == '\n' {
-            let _ = uart.write_char('\r');
-        }
-        let _ = uart.write_char(c);
-    }
-}
 
 #[entry]
 fn main() -> ! {
@@ -43,15 +34,25 @@ fn main() -> ! {
     let mut gpioe = dp.GPIOE.split(&mut rcc.ahb);
 
     // Configure LED on PE9 as output
-    let mut _led = gpioe.pe9.into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+    let mut _led = gpioe
+        .pe9
+        .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
 
     // Configure User Button on PA0 as input (active high on STM32F3 Discovery)
-    let button = gpioa.pa0.into_floating_input(&mut gpioa.moder, &mut gpioa.pupdr);
+    let button = gpioa
+        .pa0
+        .into_floating_input(&mut gpioa.moder, &mut gpioa.pupdr);
 
     // Configure USART1 pins
     // PA9 = TX, PA10 = RX (Alternate Function 7)
-    let tx_pin = gpioa.pa9.into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
-    let rx_pin = gpioa.pa10.into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+    let tx_pin =
+        gpioa
+            .pa9
+            .into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+    let rx_pin =
+        gpioa
+            .pa10
+            .into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
 
     // Set up USART1 at 115200 baud
     let mut serial = Serial::new(

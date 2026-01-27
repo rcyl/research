@@ -12,90 +12,12 @@
 use panic_halt as _;
 
 use cortex_m_rt::entry;
+use stm32f3_common::{constants, delay, uart_write_hex, uart_write_str};
 use stm32f3xx_hal::{
     pac,
     prelude::*,
-    serial::{Serial, config::Config as UartConfig},
+    serial::{config::Config as UartConfig, Serial},
 };
-
-/// Write a string to UART
-fn uart_write_str<W: core::fmt::Write>(uart: &mut W, s: &str) {
-    for c in s.chars() {
-        if c == '\n' {
-            let _ = uart.write_char('\r');
-        }
-        let _ = uart.write_char(c);
-    }
-}
-
-/// Write a hex byte to UART
-fn uart_write_hex<W: core::fmt::Write>(uart: &mut W, byte: u8) {
-    const HEX_CHARS: &[u8] = b"0123456789ABCDEF";
-    let _ = uart.write_char(HEX_CHARS[(byte >> 4) as usize] as char);
-    let _ = uart.write_char(HEX_CHARS[(byte & 0x0F) as usize] as char);
-}
-
-/// Simple delay loop
-fn delay(cycles: u32) {
-    for _ in 0..cycles {
-        cortex_m::asm::nop();
-    }
-}
-
-/// RTC Register offsets
-const RTC_TR: u32 = 0x00;    // Time register
-const RTC_DR: u32 = 0x04;    // Date register
-const RTC_CR: u32 = 0x08;    // Control register
-const RTC_ISR: u32 = 0x0C;   // Initialization and status register
-const RTC_WPR: u32 = 0x24;   // Write protection register
-
-/// RTC base address
-const RTC_BASE: u32 = 0x40002800;
-
-/// PWR base address (for backup domain access)
-const PWR_BASE: u32 = 0x40007000;
-const PWR_CR: u32 = 0x00;
-
-/// RCC base address
-const RCC_BASE: u32 = 0x40021000;
-const RCC_BDCR: u32 = 0x20;  // Backup domain control register
-const RCC_APB1ENR: u32 = 0x1C;
-
-/// Write to RTC register
-unsafe fn rtc_write(offset: u32, value: u32) {
-    let addr = (RTC_BASE + offset) as *mut u32;
-    core::ptr::write_volatile(addr, value);
-}
-
-/// Read from RTC register
-unsafe fn rtc_read(offset: u32) -> u32 {
-    let addr = (RTC_BASE + offset) as *const u32;
-    core::ptr::read_volatile(addr)
-}
-
-/// Write to PWR register
-unsafe fn pwr_write(offset: u32, value: u32) {
-    let addr = (PWR_BASE + offset) as *mut u32;
-    core::ptr::write_volatile(addr, value);
-}
-
-/// Read from PWR register
-unsafe fn pwr_read(offset: u32) -> u32 {
-    let addr = (PWR_BASE + offset) as *const u32;
-    core::ptr::read_volatile(addr)
-}
-
-/// Write to RCC register
-unsafe fn rcc_write(offset: u32, value: u32) {
-    let addr = (RCC_BASE + offset) as *mut u32;
-    core::ptr::write_volatile(addr, value);
-}
-
-/// Read from RCC register
-unsafe fn rcc_read(offset: u32) -> u32 {
-    let addr = (RCC_BASE + offset) as *const u32;
-    core::ptr::read_volatile(addr)
-}
 
 /// Convert BCD to binary
 fn bcd_to_bin(bcd: u8) -> u8 {
@@ -122,11 +44,19 @@ fn main() -> ! {
     let mut gpioe = dp.GPIOE.split(&mut rcc.ahb);
 
     // Configure LED on PE9 as output (for status indication)
-    let mut led = gpioe.pe9.into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+    let mut led = gpioe
+        .pe9
+        .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
 
     // Configure USART1 pins for debug output
-    let tx_pin = gpioa.pa9.into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
-    let rx_pin = gpioa.pa10.into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+    let tx_pin =
+        gpioa
+            .pa9
+            .into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+    let rx_pin =
+        gpioa
+            .pa10
+            .into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
 
     // Set up USART1 at 115200 baud
     let mut serial = Serial::new(
@@ -139,37 +69,41 @@ fn main() -> ! {
 
     uart_write_str(&mut serial, "RTC Peripheral Test\n");
 
+    // Get peripheral pointers via PAC
+    let rtc = unsafe { &*pac::RTC::ptr() };
+    let pwr = unsafe { &*pac::PWR::ptr() };
+    let rcc_ptr = unsafe { &*pac::RCC::ptr() };
+
     // Initialize RTC
-    unsafe {
-        // Enable PWR clock
-        let apb1enr = rcc_read(RCC_APB1ENR);
-        rcc_write(RCC_APB1ENR, apb1enr | (1 << 28)); // PWREN
+    // Enable PWR clock
+    rcc_ptr.apb1enr.modify(|_, w| w.pwren().enabled());
 
-        // Enable access to backup domain
-        let pwr_cr = pwr_read(PWR_CR);
-        pwr_write(PWR_CR, pwr_cr | (1 << 8)); // DBP bit
+    // Enable access to backup domain
+    pwr.cr.modify(|_, w| w.dbp().set_bit());
 
-        // Enable LSI and select as RTC clock source
-        let bdcr = rcc_read(RCC_BDCR);
-        // Enable RTC clock, select LSI (bits 9:8 = 10)
-        rcc_write(RCC_BDCR, bdcr | (1 << 15) | (2 << 8));
+    // Enable LSI and select as RTC clock source
+    // Enable RTC clock, select LSI (bits 9:8 = 10)
+    rcc_ptr.bdcr.modify(|_, w| {
+        w.rtcen()
+            .enabled()
+            .rtcsel()
+            .lsi()
+    });
 
-        delay(1000);
+    delay(constants::MEDIUM_DELAY);
 
-        // Disable RTC write protection
-        rtc_write(RTC_WPR, 0xCA);
-        rtc_write(RTC_WPR, 0x53);
+    // Disable RTC write protection
+    rtc.wpr.write(|w| w.key().bits(0xCA));
+    rtc.wpr.write(|w| w.key().bits(0x53));
 
-        // Enter initialization mode
-        let isr = rtc_read(RTC_ISR);
-        rtc_write(RTC_ISR, isr | (1 << 7)); // INIT bit
+    // Enter initialization mode
+    rtc.isr.modify(|_, w| w.init().init_mode());
 
-        // Wait for INITF flag
-        let mut timeout = 10000;
-        while rtc_read(RTC_ISR) & (1 << 6) == 0 && timeout > 0 {
-            timeout -= 1;
-            delay(10);
-        }
+    // Wait for INITF flag
+    let mut timeout = constants::INIT_TIMEOUT;
+    while rtc.isr.read().initf().is_not_allowed() && timeout > 0 {
+        timeout -= 1;
+        delay(10);
     }
 
     uart_write_str(&mut serial, "RTC initialized\n");
@@ -180,23 +114,27 @@ fn main() -> ! {
     let minutes: u8 = 30;
     let seconds: u8 = 0;
 
-    unsafe {
-        // Set time register (BCD format)
-        // TR: bits 22:20 = hours tens, bits 19:16 = hours units
-        //     bits 14:12 = minutes tens, bits 11:8 = minutes units
-        //     bits 6:4 = seconds tens, bits 3:0 = seconds units
-        let tr = ((bin_to_bcd(hours) as u32) << 16)
-               | ((bin_to_bcd(minutes) as u32) << 8)
-               | (bin_to_bcd(seconds) as u32);
-        rtc_write(RTC_TR, tr);
+    // Set time register (BCD format)
+    rtc.tr.write(|w| {
+        w.ht()
+            .bits(bin_to_bcd(hours) >> 4)
+            .hu()
+            .bits(bin_to_bcd(hours) & 0x0F)
+            .mnt()
+            .bits(bin_to_bcd(minutes) >> 4)
+            .mnu()
+            .bits(bin_to_bcd(minutes) & 0x0F)
+            .st()
+            .bits(bin_to_bcd(seconds) >> 4)
+            .su()
+            .bits(bin_to_bcd(seconds) & 0x0F)
+    });
 
-        // Exit initialization mode
-        let isr = rtc_read(RTC_ISR);
-        rtc_write(RTC_ISR, isr & !(1 << 7)); // Clear INIT bit
+    // Exit initialization mode
+    rtc.isr.modify(|_, w| w.init().free_running_mode());
 
-        // Re-enable write protection
-        rtc_write(RTC_WPR, 0xFF);
-    }
+    // Re-enable write protection
+    rtc.wpr.write(|w| w.key().bits(0xFF));
 
     uart_write_str(&mut serial, "Time set: ");
     uart_write_hex(&mut serial, hours);
@@ -207,14 +145,14 @@ fn main() -> ! {
     uart_write_str(&mut serial, "\n");
 
     // Small delay to let time advance
-    delay(100000);
+    delay(constants::VERY_LONG_DELAY);
 
     // Read time back
-    let tr_read = unsafe { rtc_read(RTC_TR) };
+    let tr_read = rtc.tr.read();
 
-    let hours_read = bcd_to_bin(((tr_read >> 16) & 0x3F) as u8);
-    let minutes_read = bcd_to_bin(((tr_read >> 8) & 0x7F) as u8);
-    let seconds_read = bcd_to_bin((tr_read & 0x7F) as u8);
+    let hours_read = bcd_to_bin((tr_read.ht().bits() << 4) | tr_read.hu().bits());
+    let minutes_read = bcd_to_bin((tr_read.mnt().bits() << 4) | tr_read.mnu().bits());
+    let seconds_read = bcd_to_bin((tr_read.st().bits() << 4) | tr_read.su().bits());
 
     uart_write_str(&mut serial, "Time read: ");
     uart_write_hex(&mut serial, hours_read);

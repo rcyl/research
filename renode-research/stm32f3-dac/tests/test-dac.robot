@@ -6,7 +6,7 @@ Resource                      ${RENODEKEYWORDS}
 
 *** Variables ***
 ${PLATFORM}                   ${CURDIR}/../stm32f3_dac.repl
-${ELF}                        ${CURDIR}/../target/thumbv7em-none-eabihf/release/stm32f3-dac
+${ELF}                        ${CURDIR}/../../target/thumbv7em-none-eabihf/release/stm32f3-dac
 
 *** Test Cases ***
 Should Initialize DAC And Report

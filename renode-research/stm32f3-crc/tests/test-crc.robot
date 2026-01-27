@@ -6,7 +6,7 @@ Resource                      ${RENODEKEYWORDS}
 
 *** Variables ***
 ${PLATFORM}                   ${CURDIR}/../stm32f3_crc.repl
-${ELF}                        ${CURDIR}/../target/thumbv7em-none-eabihf/release/stm32f3-crc
+${ELF}                        ${CURDIR}/../../target/thumbv7em-none-eabihf/release/stm32f3-crc
 
 *** Test Cases ***
 Should Initialize CRC And Report

@@ -6,7 +6,7 @@ Resource                      ${RENODEKEYWORDS}
 
 *** Variables ***
 ${PLATFORM}                   ${CURDIR}/../stm32f3_iwdg.repl
-${ELF}                        ${CURDIR}/../target/thumbv7em-none-eabihf/release/stm32f3-iwdg
+${ELF}                        ${CURDIR}/../../target/thumbv7em-none-eabihf/release/stm32f3-iwdg
 
 *** Test Cases ***
 Should Initialize IWDG And Report

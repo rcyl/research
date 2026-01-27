@@ -6,7 +6,7 @@ Resource                      ${RENODEKEYWORDS}
 
 *** Variables ***
 ${PLATFORM}                   ${CURDIR}/../stm32f3_rtc.repl
-${ELF}                        ${CURDIR}/../target/thumbv7em-none-eabihf/release/stm32f3-rtc
+${ELF}                        ${CURDIR}/../../target/thumbv7em-none-eabihf/release/stm32f3-rtc
 
 *** Test Cases ***
 Should Initialize RTC And Report

@@ -1,22 +1,24 @@
-14:14:15.0067 [INFO] System bus created.
-14:14:15.0602 [WARNING] Translation cache size 536870912 is larger than maximum allowed 134217728. It will be clamped to maximum
-14:14:15.0936 [INFO] sysbus: Loading block of 404 bytes length at 0x8000000.
-14:14:15.0937 [INFO] sysbus: Loading block of 1676 bytes length at 0x8000194.
-14:14:15.0937 [INFO] sysbus: Loading block of 460 bytes length at 0x8000820.
-14:14:15.0937 [INFO] sysbus: Loading block of 16 bytes length at 0x80009EC.
-14:14:15.0937 [INFO] sysbus: Loading block of 20 bytes length at 0x20000010.
-14:14:15.0978 [INFO] cpu: Guessing VectorTableOffset value to be 0x8000000.
-14:14:15.0980 [INFO] cpu: Setting initial values: PC = 0x8000195, SP = 0x2000A000.
-14:14:15.0984 [INFO] machine-0: Machine started.
-14:14:15.0997 [WARNING] sysbus: [cpu: 0x80002DA] (tag: 'FLASH_INTERFACE') ReadDoubleWord from non existing peripheral at 0x40022000, returning 0x00000000.
-14:14:15.0997 [WARNING] sysbus: [cpu: 0x80002EA] (tag: 'FLASH_INTERFACE') WriteDoubleWord to non existing peripheral at 0x40022000, value 0x0.
-14:14:15.1014 [WARNING] dma1: Unhandled write to offset 0x4, value 0xF.
-14:14:15.1014 [WARNING] dma1: Channel 0: unsupported bits written to configuration register. Value is 0x20000000.
-14:14:15.1735 [WARNING] dma1: Unhandled read from offset 0x8.
-14:14:15.1737 [WARNING] dma1: Unhandled read from offset 0xC.
-14:14:15.1739 [WARNING] dma1: Unhandled write to offset 0x4, value 0x1.
-14:14:15.1739 [WARNING] dma1: Channel 0: unsupported bits written to configuration register. Value is 0x20000000.
-14:14:15.1739 [WARNING] dma1: Unhandled read from offset 0x8.
-14:14:15.5054 [WARNING] dma1: Unhandled read from offset 0x8.
-14:14:25.1454 [INFO] machine-0: Machine paused.
-14:14:25.3563 [INFO] machine-0: Machine resumed.
+20:43:37.4812 [INFO] System bus created.
+20:43:37.5295 [WARNING] Translation cache size 536870912 is larger than maximum allowed 134217728. It will be clamped to maximum
+20:43:37.5646 [INFO] sysbus: Loading block of 404 bytes length at 0x8000000.
+20:43:37.5646 [INFO] sysbus: Loading block of 1684 bytes length at 0x8000194.
+20:43:37.5646 [INFO] sysbus: Loading block of 468 bytes length at 0x8000828.
+20:43:37.5646 [INFO] sysbus: Loading block of 16 bytes length at 0x80009FC.
+20:43:37.5646 [INFO] sysbus: Loading block of 20 bytes length at 0x20000010.
+20:43:37.5691 [INFO] cpu: Guessing VectorTableOffset value to be 0x8000000.
+20:43:37.5693 [INFO] cpu: Setting initial values: PC = 0x8000195, SP = 0x2000A000.
+20:43:37.5697 [INFO] machine-0: Machine started.
+20:43:37.5712 [WARNING] sysbus: [cpu: 0x8000228] (tag: 'FLASH_INTERFACE') ReadDoubleWord from non existing peripheral at 0x40022000, returning 0x00000000.
+20:43:37.5712 [WARNING] sysbus: [cpu: 0x8000238] (tag: 'FLASH_INTERFACE') WriteDoubleWord to non existing peripheral at 0x40022000, value 0x0.
+20:43:37.5728 [WARNING] dma1: Unhandled write to offset 0x4, value 0xF.
+20:43:37.5728 [WARNING] dma1: Channel 0: unsupported bits written to configuration register. Value is 0x20000000.
+20:43:37.5728 [WARNING] dma1: Unhandled read from offset 0xC.
+20:43:37.5728 [WARNING] dma1: Unhandled read from offset 0x8.
+20:43:37.5752 [WARNING] dma1: Unhandled read from offset 0xC.
+20:43:37.5758 [WARNING] dma1: Unhandled write to offset 0x4, value 0x1.
+20:43:37.5758 [WARNING] dma1: Channel 0: unsupported bits written to configuration register. Value is 0x20000000.
+20:43:37.5758 [WARNING] dma1: Unhandled read from offset 0x8.
+20:43:37.5758 [WARNING] dma1: Unhandled read from offset 0xC.
+20:43:37.5758 [WARNING] dma1: Unhandled read from offset 0x8.
+20:43:42.7130 [INFO] machine-0: Machine paused.
+20:43:42.9188 [INFO] machine-0: Machine resumed.

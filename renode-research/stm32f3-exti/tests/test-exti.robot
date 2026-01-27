@@ -6,7 +6,7 @@ Resource                      ${RENODEKEYWORDS}
 
 *** Variables ***
 ${PLATFORM}                   ${CURDIR}/../stm32f3_exti.repl
-${ELF}                        ${CURDIR}/../target/thumbv7em-none-eabihf/release/stm32f3-exti
+${ELF}                        ${CURDIR}/../../target/thumbv7em-none-eabihf/release/stm32f3-exti
 
 *** Test Cases ***
 Should Initialize EXTI And Report

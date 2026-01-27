@@ -6,7 +6,7 @@ Resource                      ${RENODEKEYWORDS}
 
 *** Variables ***
 ${PLATFORM}                   ${CURDIR}/../stm32f3_gpio.repl
-${ELF}                        ${CURDIR}/../target/thumbv7em-none-eabihf/release/stm32f3-gpio
+${ELF}                        ${CURDIR}/../../target/thumbv7em-none-eabihf/release/stm32f3-gpio
 
 *** Test Cases ***
 Should Initialize GPIO And Report

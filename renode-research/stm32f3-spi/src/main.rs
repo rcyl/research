@@ -11,29 +11,13 @@
 use panic_halt as _;
 
 use cortex_m_rt::entry;
+use stm32f3_common::{uart_write_hex, uart_write_str};
 use stm32f3xx_hal::{
     pac,
     prelude::*,
-    serial::{Serial, config::Config as UartConfig},
-    spi::{Spi, config::Config as SpiConfig},
+    serial::{config::Config as UartConfig, Serial},
+    spi::{config::Config as SpiConfig, Spi},
 };
-
-/// Write a string to UART
-fn uart_write_str<W: core::fmt::Write>(uart: &mut W, s: &str) {
-    for c in s.chars() {
-        if c == '\n' {
-            let _ = uart.write_char('\r');
-        }
-        let _ = uart.write_char(c);
-    }
-}
-
-/// Write a hex byte to UART
-fn uart_write_hex<W: core::fmt::Write>(uart: &mut W, byte: u8) {
-    const HEX_CHARS: &[u8] = b"0123456789ABCDEF";
-    let _ = uart.write_char(HEX_CHARS[(byte >> 4) as usize] as char);
-    let _ = uart.write_char(HEX_CHARS[(byte & 0x0F) as usize] as char);
-}
 
 #[entry]
 fn main() -> ! {
@@ -50,12 +34,20 @@ fn main() -> ! {
     let mut gpioe = dp.GPIOE.split(&mut rcc.ahb);
 
     // Configure LED on PE9 as output (for status indication)
-    let mut led = gpioe.pe9.into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+    let mut led = gpioe
+        .pe9
+        .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
 
     // Configure USART1 pins for debug output
     // PA9 = TX, PA10 = RX (Alternate Function 7)
-    let tx_pin = gpioa.pa9.into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
-    let rx_pin = gpioa.pa10.into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+    let tx_pin =
+        gpioa
+            .pa9
+            .into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+    let rx_pin =
+        gpioa
+            .pa10
+            .into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
 
     // Set up USART1 at 115200 baud
     let mut serial = Serial::new(
@@ -70,9 +62,18 @@ fn main() -> ! {
 
     // Configure SPI1 pins (Alternate Function 5)
     // PA5 = SCK, PA6 = MISO, PA7 = MOSI
-    let sck = gpioa.pa5.into_af_push_pull::<5>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
-    let miso = gpioa.pa6.into_af_push_pull::<5>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
-    let mosi = gpioa.pa7.into_af_push_pull::<5>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
+    let sck =
+        gpioa
+            .pa5
+            .into_af_push_pull::<5>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
+    let miso =
+        gpioa
+            .pa6
+            .into_af_push_pull::<5>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
+    let mosi =
+        gpioa
+            .pa7
+            .into_af_push_pull::<5>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
 
     // Configure SPI1 with default config (Mode 0, 1MHz)
     let spi_config = SpiConfig::default().frequency(1.MHz());

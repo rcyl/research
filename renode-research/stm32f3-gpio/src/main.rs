@@ -12,35 +12,12 @@
 use panic_halt as _;
 
 use cortex_m_rt::entry;
+use stm32f3_common::{constants, delay, uart_write_hex, uart_write_str};
 use stm32f3xx_hal::{
     pac,
     prelude::*,
-    serial::{Serial, config::Config as UartConfig},
+    serial::{config::Config as UartConfig, Serial},
 };
-
-/// Write a string to UART
-fn uart_write_str<W: core::fmt::Write>(uart: &mut W, s: &str) {
-    for c in s.chars() {
-        if c == '\n' {
-            let _ = uart.write_char('\r');
-        }
-        let _ = uart.write_char(c);
-    }
-}
-
-/// Write a hex byte to UART
-fn uart_write_hex<W: core::fmt::Write>(uart: &mut W, byte: u8) {
-    const HEX_CHARS: &[u8] = b"0123456789ABCDEF";
-    let _ = uart.write_char(HEX_CHARS[(byte >> 4) as usize] as char);
-    let _ = uart.write_char(HEX_CHARS[(byte & 0x0F) as usize] as char);
-}
-
-/// Simple delay loop
-fn delay(cycles: u32) {
-    for _ in 0..cycles {
-        cortex_m::asm::nop();
-    }
-}
 
 #[entry]
 fn main() -> ! {
@@ -58,8 +35,14 @@ fn main() -> ! {
 
     // Configure USART1 pins for debug output
     // PA9 = TX, PA10 = RX (Alternate Function 7)
-    let tx_pin = gpioa.pa9.into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
-    let rx_pin = gpioa.pa10.into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+    let tx_pin =
+        gpioa
+            .pa9
+            .into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+    let rx_pin =
+        gpioa
+            .pa10
+            .into_af_push_pull::<7>(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
 
     // Set up USART1 at 115200 baud
     let mut serial = Serial::new(
@@ -82,30 +65,34 @@ fn main() -> ! {
     uart_write_str(&mut serial, "\n--- Test 1: Output Toggle ---\n");
 
     // Configure LEDs on PE8 and PE9 as push-pull outputs
-    let mut led_pe8 = gpioe.pe8.into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
-    let mut led_pe9 = gpioe.pe9.into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+    let mut led_pe8 = gpioe
+        .pe8
+        .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+    let mut led_pe9 = gpioe
+        .pe9
+        .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
 
     // Test LED toggle sequence
     uart_write_str(&mut serial, "Setting PE8 HIGH\n");
     led_pe8.set_high().ok();
-    delay(10000);
+    delay(constants::LONG_DELAY);
 
     uart_write_str(&mut serial, "Setting PE9 HIGH\n");
     led_pe9.set_high().ok();
-    delay(10000);
+    delay(constants::LONG_DELAY);
 
     uart_write_str(&mut serial, "Setting PE8 LOW\n");
     led_pe8.set_low().ok();
-    delay(10000);
+    delay(constants::LONG_DELAY);
 
     uart_write_str(&mut serial, "Setting PE9 LOW\n");
     led_pe9.set_low().ok();
-    delay(10000);
+    delay(constants::LONG_DELAY);
 
     // Toggle test
     uart_write_str(&mut serial, "Toggling PE8\n");
     led_pe8.toggle().ok();
-    delay(10000);
+    delay(constants::LONG_DELAY);
     led_pe8.toggle().ok();
 
     uart_write_str(&mut serial, "Output toggle test: PASS\n");
@@ -117,7 +104,9 @@ fn main() -> ! {
     uart_write_str(&mut serial, "\n--- Test 2: Input Read ---\n");
 
     // Configure PA0 as input with pull-down (button reads high when pressed)
-    let button = gpioa.pa0.into_pull_down_input(&mut gpioa.moder, &mut gpioa.pupdr);
+    let button = gpioa
+        .pa0
+        .into_pull_down_input(&mut gpioa.moder, &mut gpioa.pupdr);
 
     // Read initial state (should be low with pull-down when not pressed)
     let initial_state = button.is_high().unwrap_or(false);
@@ -134,7 +123,7 @@ fn main() -> ! {
 
     // Wait for button press (high state) with timeout
     let mut button_pressed = false;
-    let mut timeout = 500000u32;
+    let mut timeout = constants::INPUT_TIMEOUT;
     while timeout > 0 {
         if button.is_high().unwrap_or(false) {
             button_pressed = true;
@@ -150,7 +139,7 @@ fn main() -> ! {
 
         // Wait for button release
         uart_write_str(&mut serial, "Waiting for button release...\n");
-        timeout = 500000;
+        timeout = constants::INPUT_TIMEOUT;
         while timeout > 0 && button.is_high().unwrap_or(false) {
             timeout -= 1;
             delay(10);
@@ -178,8 +167,10 @@ fn main() -> ! {
     // is accepted without errors, rather than the actual electrical behavior.
 
     // Configure PA1 with pull-up
-    let pa1_pullup = gpioa.pa1.into_pull_up_input(&mut gpioa.moder, &mut gpioa.pupdr);
-    delay(1000);
+    let pa1_pullup = gpioa
+        .pa1
+        .into_pull_up_input(&mut gpioa.moder, &mut gpioa.pupdr);
+    delay(constants::MEDIUM_DELAY);
     let pullup_state = pa1_pullup.is_high().unwrap_or(false);
     uart_write_str(&mut serial, "PA1 with pull-up: ");
     if pullup_state {
@@ -190,7 +181,7 @@ fn main() -> ! {
 
     // Reconfigure PA1 with pull-down
     let _pa1_pulldown = pa1_pullup.into_pull_down_input(&mut gpioa.moder, &mut gpioa.pupdr);
-    delay(1000);
+    delay(constants::MEDIUM_DELAY);
 
     // Pull configuration registers were set without errors
     uart_write_str(&mut serial, "Pull register configuration: OK\n");

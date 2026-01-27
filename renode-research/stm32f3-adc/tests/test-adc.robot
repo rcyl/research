@@ -6,7 +6,7 @@ Resource                      ${RENODEKEYWORDS}
 
 *** Variables ***
 ${PLATFORM}                   ${CURDIR}/../stm32f3_adc.repl
-${ELF}                        ${CURDIR}/../target/thumbv7em-none-eabihf/release/stm32f3-adc
+${ELF}                        ${CURDIR}/../../target/thumbv7em-none-eabihf/release/stm32f3-adc
 
 *** Test Cases ***
 Should Initialize ADC And Report
